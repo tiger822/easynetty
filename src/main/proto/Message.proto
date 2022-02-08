@@ -1,0 +1,17 @@
+syntax = "proto3";
+import "google/protobuf/any.proto";
+import "google/type/date.proto";
+import "google/api/system_parameter.proto";
+import "google/protobuf/wrappers.proto";
+
+package com.freestyle.protobuf.proto;
+
+message MessageProperties{
+    string uuid=1;
+    int64  id=2;
+    string sClass=3;
+}
+message Message{
+    MessageProperties properties=1;
+    bytes data =2;
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package com.freestyle.proto;
+
+option java_package = "com.freestyle.proto";
+//option java_outer_classname = "DataInfo";
+
+message Student{
+    string name =1;
+    int32 age = 2;
+    string city = 3;
+}
