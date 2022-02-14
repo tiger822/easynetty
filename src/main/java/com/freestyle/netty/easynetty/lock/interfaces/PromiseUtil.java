@@ -6,10 +6,10 @@ package com.freestyle.netty.easynetty.lock.interfaces;
 public interface PromiseUtil<T> {
   Long newLock(Class<?>... tClass);
   Long getCurrentID();
-  T await(long... microseSecondsToWait);
-  T await(Class<?> tClass, long... microseSecondsToWait);
-  T await(Long id, long... microseSecondsToWait);
-  T await(Class<?> tClass,Long id, long... microseSecondsToWait);
+  T await(long... milliSecondsToWait);
+  T await(Class<?> tClass, long... milliSecondsToWait);
+  T await(Long id, long... milliSecondsToWait);
+  T await(Class<?> tClass,Long id, long... milliSecondsToWait);
 
   boolean signal(Long id,T val);
   void release(Class<?>... tClass);

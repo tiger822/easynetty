@@ -30,11 +30,11 @@ public class CountDownPromiseUtil<T> extends AbstractPromiseUtil<T> implements P
 
   /**
    * 等待完成信息,默认等待10秒
-   * @param microseSecondsToWait 单位毫秒
+   * @param milliSecondsToWait 单位毫秒
    */
   @Override
-  public  T await(long... microseSecondsToWait){
-    return await(getCurrentID(), microseSecondsToWait);
+  public  T await(long... milliSecondsToWait){
+    return await(getCurrentID(), milliSecondsToWait);
   }
 
 
@@ -42,17 +42,17 @@ public class CountDownPromiseUtil<T> extends AbstractPromiseUtil<T> implements P
   /**
    * 等待完成信息,默认等待10秒
    * @param id
-   * @param microseSecondsToWait 单位毫秒
+   * @param milliSecondsToWait 单位毫秒
    */
   @Override
-  public  T await(Long id, long... microseSecondsToWait) {
-    return await(Object.class,id,microseSecondsToWait);
+  public  T await(Long id, long... milliSecondsToWait) {
+    return await(Object.class,id,milliSecondsToWait);
   }
   @Override
-    public T await(Class<?> tClass,Long id, long... microseSecondsToWait) {
+    public T await(Class<?> tClass,Long id, long... milliSecondsToWait) {
     try {
       Object key=id+tClass.getName();
-      lockMaps.get(key).await(microseSecondsToWait.length==0?20000:microseSecondsToWait[0], TimeUnit.MILLISECONDS);
+      lockMaps.get(key).await(milliSecondsToWait.length==0?20000:milliSecondsToWait[0], TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -60,8 +60,8 @@ public class CountDownPromiseUtil<T> extends AbstractPromiseUtil<T> implements P
   }
 
   @Override
-  public T await(Class<?> tClass,long... microseSecondsToWait) {
-    return await(tClass,getCurrentID(),microseSecondsToWait);
+  public T await(Class<?> tClass,long... milliSecondsToWait) {
+    return await(tClass,getCurrentID(),milliSecondsToWait);
   }
 
   /***

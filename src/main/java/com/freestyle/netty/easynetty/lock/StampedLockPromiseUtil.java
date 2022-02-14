@@ -62,21 +62,21 @@ public class StampedLockPromiseUtil<T> extends AbstractPromiseUtil<T> implements
   }
 
   @Override
-  public T await(Class<?> tClass, long... microseSecondsToWait) {
-    return await(tClass,getCurrentID(),microseSecondsToWait);
+  public T await(Class<?> tClass, long... milliSecondsToWait) {
+    return await(tClass,getCurrentID(),milliSecondsToWait);
   }
 
   @Override
-  public T await(Long id, long... microseSecondsToWait){
-    return await(Object.class,id,microseSecondsToWait);
+  public T await(Long id, long... milliSecondsToWait){
+    return await(Object.class,id,milliSecondsToWait);
   }
 
   @Override
-  public T await(Class<?> tClass,Long id, long... microseSecondsToWait) {
+  public T await(Class<?> tClass,Long id, long... milliSecondsToWait) {
     T ret=null;
     Object key=id+tClass.getName();
     try {
-      if (lockMaps.get(key).await(microseSecondsToWait.length==0?20000:microseSecondsToWait[0], TimeUnit.MILLISECONDS)){
+      if (lockMaps.get(key).await(milliSecondsToWait.length==0?20000:milliSecondsToWait[0], TimeUnit.MILLISECONDS)){
         ret= returnValues.get(id);
       }
       else{
