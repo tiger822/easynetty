@@ -1,4 +1,4 @@
-package com.freestyle.netty.easynetty.pojo;
+package com.freestyle.netty.easynetty.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

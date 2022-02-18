@@ -1,6 +1,8 @@
 package com.freestyle.netty.easynetty.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +44,23 @@ public class Utils {
   public static <T> T fromJson(String jsonStr,Class<T> tClass) {
     try {
       return getMapper(tClass).readValue(jsonStr,tClass);
+    } catch (IOException e) {
+      //log.error("fromJsonBytes",e);
+      e.printStackTrace();
+      return null;
+    }
+  }
+  public static <T> T fromJson(String jsonStr, TypeReference<T> valueTypeRef){
+    try {
+      return getMapper(valueTypeRef.getType().getClass()).readValue(jsonStr,valueTypeRef);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+  public static <T> T fromJsonBytes(byte[] bytes,TypeReference<T> valueTypeRef) {
+    try {
+      return getMapper(valueTypeRef.getType().getClass()).readValue(bytes,valueTypeRef);
     } catch (IOException e) {
       //log.error("fromJsonBytes",e);
       e.printStackTrace();

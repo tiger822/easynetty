@@ -1,4 +1,4 @@
-package com.freestyle.netty.easynetty.pojo;
+package com.freestyle.netty.easynetty.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

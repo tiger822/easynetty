@@ -15,7 +15,7 @@
     <!--
     <version>1.0.1-SNAPSHOT</version>
     -->
-    <version>1.0.4-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
     <name>${project.artifactId} ${project.version}</name>
     <url>https://github.com/tiger822/easynetty</url>
     <description>a java project for easy to apply java netty framework.</description>

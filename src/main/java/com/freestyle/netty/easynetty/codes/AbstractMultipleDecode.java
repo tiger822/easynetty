@@ -1,8 +1,11 @@
 package com.freestyle.netty.easynetty.codes;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class AbstractMultipleDecode extends ByteToMessageDecoder {
   private final ConcurrentHashMap<byte[],Class<?>> classMap=new ConcurrentHashMap<>();
+ // private final AttributeKey<byte[]> lastDataKey=AttributeKey.valueOf(byte[].class,"lastDataKey");
   public abstract Object decodeObject(byte[] data,Class<?> tClass);
 
   public AbstractMultipleDecode registerClass(byte[] headerTag, Class<?> tClass){
@@ -35,6 +39,21 @@ public abstract class AbstractMultipleDecode extends ByteToMessageDecoder {
     in.clear();
     out.add(b);
   }
+  /*private byte[] combineBytes(byte[] a,byte[] b){
+    byte[] ret=new byte[a.length+b.length];
+    System.arraycopy(a,0,ret,0,a.length);
+    System.arraycopy(b,0,ret,a.length,b.length);
+    return ret;
+  }
+  private byte[] getLastData(ChannelHandlerContext cx){
+    Attribute<byte[]> att=cx.channel().attr(lastDataKey);
+    byte[] data=att.get();
+    return data==null?new byte[]{}:data;
+  }
+  private void setLastDataKey(ChannelHandlerContext cx,byte[] data){
+    Attribute<byte[]> att=cx.channel().attr(lastDataKey);
+    att.set(data);
+  }*/
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
     int byteSize = in.readableBytes(); //这次有多少
@@ -55,8 +74,14 @@ public abstract class AbstractMultipleDecode extends ByteToMessageDecoder {
         continue;
       }
       int dataLength = in.readInt();
+      /*//by rocklee 18/Feb/2022
+      byte[] lastData=getLastData(ctx);
+      int available=in.readableBytes()+lastData.length;
+      //by rocklee 18/Feb/2022 end*/
       if (in.readableBytes() < dataLength) {//不够一帧
-       continue;
+        /*lastData=combineBytes(lastData, ByteBufUtil.getBytes(in));
+        setLastDataKey(ctx,lastData);*/
+        continue;
       } else {
         byte[] data = new byte[dataLength];
         in.readBytes(data);
