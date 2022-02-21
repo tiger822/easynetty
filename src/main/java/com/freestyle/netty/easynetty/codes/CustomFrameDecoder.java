@@ -1,5 +1,6 @@
 package com.freestyle.netty.easynetty.codes;
 
+import com.freestyle.netty.easynetty.common.NettyUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -19,9 +20,14 @@ public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
   private Function<byte[],T> onCreateObject;
   private boolean throwExceptionOnInvalidFormat=false;
   private String decodeName;
+  private boolean reDeliverRawData;
   public CustomFrameDecoder(byte[] header, Function<byte[],T> onCreateObject) {
     this.header = header;
     this.onCreateObject=onCreateObject;
+  }
+  public CustomFrameDecoder setReDeliverRawData(boolean reDeliverRawData){
+    this.reDeliverRawData=reDeliverRawData;
+    return this;
   }
   public CustomFrameDecoder<T> setDecodeName(String decodeName){
     this.decodeName=decodeName;
@@ -33,9 +39,14 @@ public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
   }
   private void packRawData(ChannelHandlerContext ctx,ByteBuf in,List<Object>out){
     in.resetReaderIndex();
-    ByteBuf b=in.retainedSlice();
-    in.clear();
-    out.add(b);
+    if (reDeliverRawData){//最后一个解码器，则重新投入，让前面的解码器尝试解码
+      NettyUtil.reDeliver(ctx.pipeline(),in);
+    }
+    else{
+      ByteBuf cloneBuf=in.retainedSlice();
+      in.clear();
+      out.add(cloneBuf);
+    }
   }
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -47,28 +58,18 @@ public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
          in.markReaderIndex();
          byte headerSize = in.readByte();
          if (headerSize != header.length) {
-           if (throwExceptionOnInvalidFormat) {
-             throw new Exception("Invalid frame format");
-           }
-           else{
-             packRawData(ctx,in,out);
-             return;
-           }
+           packRawData(ctx,in,out);
+           return ;
          }
          byte[] inHeader = new byte[headerSize];
          in.readBytes(inHeader);
          if (!Arrays.equals(inHeader, header)) {
-           if (throwExceptionOnInvalidFormat) {
-             throw new Exception("Invalid frame format");
-           }
-           else{
-             packRawData(ctx,in,out);
-             return;
-           }
+           packRawData(ctx,in,out);
+           return;
          }
          int dataLength = in.readInt();
          if (in.readableBytes() <  dataLength) {//不够一帧
-           packRawData(ctx,in,out);
+           in.resetReaderIndex();
            return;
          } else {
            byte[] data=new byte[dataLength];

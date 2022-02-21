@@ -1,11 +1,9 @@
 package com.freestyle.netty.easynetty.codes;
 
+import com.freestyle.netty.easynetty.common.NettyUtil;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,8 +15,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class AbstractMultipleDecode extends ByteToMessageDecoder {
   private final ConcurrentHashMap<byte[],Class<?>> classMap=new ConcurrentHashMap<>();
+  private boolean reDeliverRawData;
  // private final AttributeKey<byte[]> lastDataKey=AttributeKey.valueOf(byte[].class,"lastDataKey");
   public abstract Object decodeObject(byte[] data,Class<?> tClass);
+
+  public AbstractMultipleDecode setReDeliverRawData(boolean reDeliverRawData){
+    this.reDeliverRawData=reDeliverRawData;
+    return this;
+  }
 
   public AbstractMultipleDecode registerClass(byte[] headerTag, Class<?> tClass){
     if (classMap.containsKey(headerTag)||classMap.containsValue(tClass)){
@@ -33,65 +37,99 @@ public abstract class AbstractMultipleDecode extends ByteToMessageDecoder {
     }
     return this;
   }
-  private void packRawData(ChannelHandlerContext ctx,ByteBuf in,List<Object>out){
+  /*private void packRawData(ChannelHandlerContext ctx,ByteBuf in,List<Object>out){
     in.resetReaderIndex();
     ByteBuf b=in.retainedSlice();
     in.clear();
     out.add(b);
-  }
-  /*private byte[] combineBytes(byte[] a,byte[] b){
-    byte[] ret=new byte[a.length+b.length];
-    System.arraycopy(a,0,ret,0,a.length);
-    System.arraycopy(b,0,ret,a.length,b.length);
-    return ret;
-  }
-  private byte[] getLastData(ChannelHandlerContext cx){
-    Attribute<byte[]> att=cx.channel().attr(lastDataKey);
-    byte[] data=att.get();
-    return data==null?new byte[]{}:data;
-  }
-  private void setLastDataKey(ChannelHandlerContext cx,byte[] data){
-    Attribute<byte[]> att=cx.channel().attr(lastDataKey);
-    att.set(data);
   }*/
-  @Override
-  protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    int byteSize = in.readableBytes(); //这次有多少
-    if (byteSize < 6) {//不足以形成一帧，则退出
-      return;
+  private Class recvClass; //正在接收的类
+  private long frameSize=-1;//当前这一帧的长度
+  private ByteBuf cumulation; //累积下来的原始数据
+  private boolean first;
+  private Cumulator cumulator = MERGE_CUMULATOR;
+  private Object packRawData(ChannelHandlerContext ctx,ByteBuf in){
+    in.resetReaderIndex();
+    if (reDeliverRawData){//最后一个解码器，则重新投入，让前面的解码器尝试解码
+      NettyUtil.reDeliver(ctx.pipeline(),in);
+      return null;
+    }
+    else{
+      ByteBuf cloneBuf=in.retainedSlice();
+      in.clear();
+      return cloneBuf;
+    }
+  }
+  protected Object decode(ChannelHandlerContext ctx,ByteBuf in ){
+    int byteSize=in.readableBytes();
+    if (byteSize<6){
+      return null;
     }
     in.markReaderIndex();
-    for (Map.Entry<byte[],Class<?>>entry:classMap.entrySet()) {
-      in.resetReaderIndex();
-      //尝试看这篮子里面的数据够不够一帧
-      byte headerSize = in.readByte();
-      if (headerSize != entry.getKey().length) {
-         continue;
-      }
-      byte[] inHeader = new byte[entry.getKey().length];
-      in.readBytes(inHeader);
-      if (!Arrays.equals(inHeader, entry.getKey())) {
-        continue;
-      }
-      int dataLength = in.readInt();
-      /*//by rocklee 18/Feb/2022
-      byte[] lastData=getLastData(ctx);
-      int available=in.readableBytes()+lastData.length;
-      //by rocklee 18/Feb/2022 end*/
-      if (in.readableBytes() < dataLength) {//不够一帧
-        /*lastData=combineBytes(lastData, ByteBufUtil.getBytes(in));
-        setLastDataKey(ctx,lastData);*/
-        continue;
-      } else {
-        byte[] data = new byte[dataLength];
-        in.readBytes(data);
-        Object obj = decodeObject(data,entry.getValue());
-        out.add(obj);
+    if (recvClass==null){//新的一个循环
+      //先确定数据类型
+      for (Map.Entry<byte[],Class<?>>entry:classMap.entrySet()) {
+        in.resetReaderIndex();
+        byte headerSize = in.readByte();
+        if (headerSize != entry.getKey().length) {
+          continue;
+        }
+        byte[] inHeader = new byte[entry.getKey().length];
+        in.readBytes(inHeader);
+        if (!Arrays.equals(inHeader, entry.getKey())) {
+          continue;
+        }
+        recvClass=entry.getValue();
         break;
       }
+      if (recvClass==null){//数据不匹配，装起来扔到下个handler
+        return packRawData(ctx,in);
+        /*in.resetReaderIndex();
+        if (reDeliverRawData){//最后一个解码器，则重新投入，让前面的解码器尝试解码
+          NettyUtil.reDeliver(ctx.pipeline(),in);
+          return null;
+        }
+        else{
+          ByteBuf cloneBuf=in.retainedSlice();
+          in.clear();
+          return cloneBuf;
+        }*/
+      }
+      return null;
     }
-    if (out.size()==0){
-      packRawData(ctx,in,out);
+    else if (frameSize==-1){
+      if (in.readableBytes()<4){//数据不够一帧，退出
+        return null;
+      }
+      frameSize =in.readInt();//此类的长度
+      if (frameSize<=0){ //数据不匹配
+        return packRawData(ctx,in);
+      }
+      return null;
     }
+    else{//已经知道要接收的是什么类型的数据，就接收剩下的数据吧
+      if (in.readableBytes() < frameSize) {//不够一帧
+        return null;
+      }
+      try {
+        byte[] data = new byte[(int) frameSize];
+        in.readBytes(data);
+        Object obj = decodeObject(data, recvClass);
+        return obj;
+      }
+      finally {
+        frameSize =-1;
+        recvClass = null;
+      }
+    }
+  }
+
+  @Override
+  protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+    Object object=decode(ctx,msg);
+    if (object!=null){
+       out.add(object);
+    }
+
   }
 }
