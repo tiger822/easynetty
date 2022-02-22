@@ -1,5 +1,13 @@
 # easynetty
 A java project for easy to implement netty framework
+# dependencys
+```xml
+    <dependency>
+        <groupId>io.github.tiger822.netty</groupId>
+        <artifactId>easynetty</artifactId>
+        <version>1.0.6-SNAPSHOT</version>
+    </dependency>
+```
 # features
 ## 1. 容易建立服务端、客户端对象
 ## 2. 自带锁工具类，可实现服务端同步回传确认 
