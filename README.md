@@ -5,7 +5,7 @@ A java project for easy to implement netty framework
     <dependency>
         <groupId>io.github.tiger822.netty</groupId>
         <artifactId>easynetty</artifactId>
-        <version>1.0.6-SNAPSHOT</version>
+        <version>1.0.7-SNAPSHOT</version>
     </dependency>
 ```
 # features
