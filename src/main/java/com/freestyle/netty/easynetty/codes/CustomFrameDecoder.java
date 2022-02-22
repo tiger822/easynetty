@@ -16,12 +16,13 @@ import java.util.function.Function;
  */
 @Deprecated
 public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
-  private byte[] header;
+  public static int MAX_FRAME_SIZE=65536;
+  private int header;
   private Function<byte[],T> onCreateObject;
   private boolean throwExceptionOnInvalidFormat=false;
   private String decodeName;
   private boolean reDeliverRawData;
-  public CustomFrameDecoder(byte[] header, Function<byte[],T> onCreateObject) {
+  public CustomFrameDecoder(int header, Function<byte[],T> onCreateObject) {
     this.header = header;
     this.onCreateObject=onCreateObject;
   }
@@ -51,12 +52,33 @@ public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
        int byteSize = in.readableBytes(); //这次有多少
-       if (byteSize < 7) {//不足以形成一帧，则退出
+       if (byteSize < 8) {//不足以形成一帧，则退出
          return;
        } else {
          //尝试看这篮子里面的数据够不够一帧
          in.markReaderIndex();
-         byte headerSize = in.readByte();
+         int dataLength = in.readInt();
+         if (dataLength>MAX_FRAME_SIZE||dataLength<0){//不是本类型数据
+           packRawData(ctx,in,out);
+           return;
+         }
+         if (in.readableBytes() <  dataLength+4) {//不够一帧
+           in.resetReaderIndex();
+           return;
+         }
+         else if (in.readInt()!=header){ //不是本类型数据
+           packRawData(ctx,in,out);
+           return;
+         }
+         else {
+           byte[] data=new byte[dataLength];
+           in.readBytes(data);
+           T obj=onCreateObject.apply(data);
+           out.add(obj);
+           return;
+         }
+
+         /*byte headerSize = in.readByte();
          if (headerSize != header.length) {
            packRawData(ctx,in,out);
            return ;
@@ -77,7 +99,7 @@ public class CustomFrameDecoder<T> extends ByteToMessageDecoder {
            T obj=onCreateObject.apply(data);
            out.add(obj);
            return;
-         }
+         }*/
      }
 
   }

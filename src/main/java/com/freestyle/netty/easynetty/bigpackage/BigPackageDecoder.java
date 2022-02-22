@@ -20,7 +20,7 @@ public abstract class BigPackageDecoder extends AbstractMultipleDecode {
     this( BigPackageConsts.protocols.keySet().iterator().next());
   }
   public abstract void onPackageOutput(ChannelHandlerContext ctx,BigPackageProperties properties,byte[] data,List<Object> out);
-  public BigPackageDecoder(byte[] type) {
+  public BigPackageDecoder(int type) {
     registerClass(type, BigPackageProperties.class);
   }
   @Override
@@ -52,12 +52,6 @@ public abstract class BigPackageDecoder extends AbstractMultipleDecode {
     }
     else { //已经有头部描述
       int bufLen= msg.readableBytes();
-      /*if (properties.getRt()+bufLen<=properties.getTotal()) {
-        properties.setRt(properties.getRt() + bufLen);
-        onPackageOutput(ctx,properties, ByteBufUtil.getBytes(msg),out);
-        msg.clear();
-        return;
-      }*/
       ByteBuf dumpBuf=msg.readRetainedSlice((int) (bufLen<=properties.getTotal()-properties.getRt()
               ?bufLen:properties.getTotal()-properties.getRt()));
       try {

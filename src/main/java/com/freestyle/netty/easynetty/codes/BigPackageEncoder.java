@@ -15,19 +15,20 @@ public class BigPackageEncoder extends CustomFrameEncoder<BigPackageProperties>{
   public BigPackageEncoder() {
     this(BigPackageConsts.protocols.keySet().iterator().next());
   }
-  public BigPackageEncoder(byte[] headers) {
-    this(headers,properties -> Utils.toJsonBytes(properties));
+  public BigPackageEncoder(int header) {
+    this(header,properties -> Utils.toJsonBytes(properties));
   }
-  public BigPackageEncoder(byte[] headers, Function<BigPackageProperties, byte[]> converter) {
-    super(BigPackageProperties.class,headers,converter);
+  public BigPackageEncoder(int header, Function<BigPackageProperties, byte[]> converter) {
+    super(BigPackageProperties.class,header,converter);
   }
 
   @Override
   protected void encode(ChannelHandlerContext ctx, BigPackageProperties properties, ByteBuf out) throws Exception {
-    out.writeByte((byte)(getHeader().length));
-    out.writeBytes(getHeader());
+    /*out.writeByte((byte)(getHeader().length));
+    out.writeBytes(getHeader());*/
     byte[] bytes=getConverter().apply(properties);
     out.writeInt(bytes.length);
+    out.writeInt(getHeader());
     out.writeBytes(bytes);
   }
 }
