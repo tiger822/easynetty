@@ -1,20 +1,13 @@
 package com.freestyle.netty.easynetty.bigpackage;
 
 import com.freestyle.netty.easynetty.common.ArrayUtil;
-import com.freestyle.netty.easynetty.common.Utils;
-import com.freestyle.netty.easynetty.dto.BigPackageConsts;
 import com.freestyle.netty.easynetty.dto.BigPackageProperties;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.util.ReferenceCountUtil;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.function.Supplier;

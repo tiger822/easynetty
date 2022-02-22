@@ -38,14 +38,16 @@ public abstract class BigPackageDecoder extends AbstractMultipleDecode {
   protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
     if (properties==null) {//开始
       Object object = decode(ctx, msg);
-      if (object != null) {
-        if (object instanceof BigPackageProperties) {
-          if (properties != null) {//又收到文件描述？？
-            return;
-          }
-          properties = (BigPackageProperties) object;
-          onPackageOutput(ctx,properties,null,out);
+      if (object==null)return;
+      if (object instanceof BigPackageProperties) {
+        if (properties != null) {//又收到文件描述？？
+          return;
         }
+        properties = (BigPackageProperties) object;
+        onPackageOutput(ctx,properties,null,out);
+      }
+      else{
+        out.add(object);//不是BigPackage内容
       }
     }
     else { //已经有头部描述
@@ -61,11 +63,11 @@ public abstract class BigPackageDecoder extends AbstractMultipleDecode {
       try {
         properties.setRt(properties.getRt() + dumpBuf.readableBytes());
         onPackageOutput(ctx,properties,ByteBufUtil.getBytes(dumpBuf),out);
+      }
+      finally {
         if (properties.getTotal().longValue()==properties.getRt()){
           properties=null;
         }
-      }
-      finally {
         ReferenceCountUtil.release(dumpBuf);
       }
     }
